@@ -41,7 +41,9 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     resp = JSONResponse({"access_token": token})
     resp.set_cookie(key="access_token", value=token, httponly=True, max_age=1800)
     return resp
-
+@app.get("/", response_class=HTMLResponse)
+async def home_page(request: Request):
+    return RedirectResponse(url="/login", status_code=303)
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
