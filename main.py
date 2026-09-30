@@ -10,11 +10,12 @@ from jose import jwt
 from passlib.context import CryptContext
 from dotenv import load_dotenv
 from gemini_utils import get_home_recommendations, get_party_recommendations, get_jewelry_recommendations
-
 load_dotenv()
 app = FastAPI(title="PocketSmart AI")
 templates = Jinja2Templates(directory="templates")
-
+import pathlib
+if pathlib.Path("static").exists():
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 SECRET_KEY = os.getenv("SECRET_KEY","ram_secret_123")
