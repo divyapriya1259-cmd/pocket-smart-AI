@@ -14,7 +14,7 @@ from gemini_utils import get_home_recommendations, get_party_recommendations, ge
 load_dotenv()
 app = FastAPI(title="PocketSmart AI")
 templates = Jinja2Templates(directory="templates")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 SECRET_KEY = os.getenv("SECRET_KEY","ram_secret_123")
