@@ -83,7 +83,8 @@ async def party_budget(request: Request):
 
 @app.post("/jewelry-budget")
 async def jewelry_budget(total_budget: float = Form(...), occasion: str = Form(...), image: UploadFile = File(None)):
-    path = None
+        path = f"static/uploads/{image.filename}"
+        with open(path, "wb") as f: shutil.copyfileobj(image.file, f)
     if image and image.filename:
         path = f"static/uploads/{image.filename}"
         with open(path, "wb") as f: shutil.copyfileobj(image.file, f)
