@@ -9,18 +9,11 @@ from datetime import datetime, timedelta
 import pathlib
 import asyncio
 import shutil
-
-# --- Import your recommendation functions (same as before) ---
-# from recommendations import get_home_recommendations, get_party_recommendations, get_jewelry_recommendations
-# Unga pazhaya import-a apdiye vechukonga
-
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
-
 # Vercel fix - static folder check
 if pathlib.Path("static").exists():
     app.mount("/static", StaticFiles(directory="static"), name="static")
-
 # --- Your existing variables ---
 users_db = {}
 active_sessions = {}
@@ -28,17 +21,14 @@ blacklisted_tokens = set()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"
-
 def create_access_token(data: dict, expires_delta: timedelta):
     to_encode = data.copy()
     expire = datetime.utcnow() + expires_delta
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
 async def get_token(request: Request):
     token = request.cookies.get("access_token")
     return token
-
 @app.post("/token")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = users_db.get(form_data.username)
@@ -49,25 +39,20 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     resp = JSONResponse({"access_token": token})
     resp.set_cookie(key="access_token", value=token, httponly=True, max_age=1800)
     return resp
-
 # --- THIS IS THE FIX FOR "Not Found" ---
 @app.get("/", response_class=HTMLResponse)
 async def home_page(request: Request):
     return RedirectResponse(url="/login", status_code=303)
-
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
-
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
-
 @app.post("/register")
 async def register_user(username: str = Form(...), password: str = Form(...)):
     users_db[username] = {"username": username, "hashed_password": pwd_context.hash(password)}
     return RedirectResponse(url="/login", status_code=303)
-
 @app.post("/logout")
 async def logout(request: Request):
     token = await get_token(request)
@@ -76,33 +61,27 @@ async def logout(request: Request):
     resp = RedirectResponse(url="/login", status_code=303)
     resp.delete_cookie("access_token")
     return resp
-
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
-
 @app.post("/home-budget")
 async def home_budget(request: Request):
     data = await request.json()
     obj = type('obj', (), {'total_budget': data.get('budget'), 'room_type': data.get('room_type')})()
     return get_home_recommendations(obj)
-
 @app.post("/party-budget")
 async def party_budget(request: Request):
     data = await request.json()
     obj = type('obj', (), {'total_budget': data.get('budget'), 'party_type': data.get('party_type'), 'num_guests': data.get('guests')})()
     return get_party_recommendations(obj)
-
 @app.post("/jewelry-budget")
 async def jewelry_budget(total_budget: float = Form(...), occasion: str = Form(...), image: UploadFile = File(None)):
     path = None
     obj = type('obj', (), {'total_budget': total_budget, 'occasion': occasion})()
     return get_jewelry_recommendations(obj, path)
-
 @app.get("/history", response_class=HTMLResponse)
 async def history_page(request: Request):
     return templates.TemplateResponse("history.html", {"request": request})
-
 @app.on_event("startup")
 async def startup():
     async def cleanup():
