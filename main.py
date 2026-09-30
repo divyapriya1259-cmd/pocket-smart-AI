@@ -11,6 +11,17 @@ import asyncio
 import shutil
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="templates")  <- ITHU LINE 13
+
+def get_home_recommendations(obj):    <- ITHA INGA PASTE PANNUGA KELA
+    return {"message": f"Home budget {obj.total_budget} success"}
+def get_party_recommendations(obj):
+    return {"message": f"Party {obj.party_type} success"}
+def get_jewelry_recommendations(obj, path):
+    return {"message": f"Jewelry {obj.occasion} success"}
+
+# Vercel fix - static folder check  <- ITHU ADUTHA LINE
+if pathlib.Path("static").exists():
 # Vercel fix - static folder check
 if pathlib.Path("static").exists():
     app.mount("/static", StaticFiles(directory="static"), name="static")
