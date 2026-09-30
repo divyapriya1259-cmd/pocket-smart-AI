@@ -1,9 +1,0 @@
-fastapi
-uvicorn
-python-dotenv
-google-generativeai
-python-multipart
-Jinja2
-passlib[bcrypt]
-python-jose[cryptography]
-Pillow
