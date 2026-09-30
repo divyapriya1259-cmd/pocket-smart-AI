@@ -1,35 +1,43 @@
-import os, asyncio, shutil
-from datetime import datetime, timedelta
-from fastapi import FastAPI, Request, Form, Depends, File, UploadFile, HTTPException
+from fastapi import FastAPI, Request, Form, File, UploadFile, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
 from passlib.context import CryptContext
-from dotenv import load_dotenv
-from gemini_utils import get_home_recommendations, get_party_recommendations, get_jewelry_recommendations
-load_dotenv()
-app = FastAPI(title="PocketSmart AI")
-templates = Jinja2Templates(directory="templates")
+from datetime import datetime, timedelta
 import pathlib
+import asyncio
+import shutil
+
+# --- Import your recommendation functions (same as before) ---
+# from recommendations import get_home_recommendations, get_party_recommendations, get_jewelry_recommendations
+# Unga pazhaya import-a apdiye vechukonga
+
+app = FastAPI()
+templates = Jinja2Templates(directory="templates")
+
+# Vercel fix - static folder check
 if pathlib.Path("static").exists():
     app.mount("/static", StaticFiles(directory="static"), name="static")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-SECRET_KEY = os.getenv("SECRET_KEY","ram_secret_123")
-ALGORITHM = "HS256"
+# --- Your existing variables ---
+users_db = {}
+active_sessions = {}
+blacklisted_tokens = set()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-users_db, active_sessions, blacklisted_tokens = {}, {}, set()
+SECRET_KEY = "your-secret-key"
+ALGORITHM = "HS256"
 
-def create_access_token(data: dict, expires_delta=None):
+def create_access_token(data: dict, expires_delta: timedelta):
     to_encode = data.copy()
-    to_encode.update({"exp": datetime.utcnow() + (expires_delta or timedelta(minutes=15))})
+    expire = datetime.utcnow() + expires_delta
+    to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 async def get_token(request: Request):
-    return request.cookies.get("access_token")
+    token = request.cookies.get("access_token")
+    return token
 
 @app.post("/token")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -41,9 +49,12 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     resp = JSONResponse({"access_token": token})
     resp.set_cookie(key="access_token", value=token, httponly=True, max_age=1800)
     return resp
+
+# --- THIS IS THE FIX FOR "Not Found" ---
 @app.get("/", response_class=HTMLResponse)
 async def home_page(request: Request):
     return RedirectResponse(url="/login", status_code=303)
+
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -60,7 +71,8 @@ async def register_user(username: str = Form(...), password: str = Form(...)):
 @app.post("/logout")
 async def logout(request: Request):
     token = await get_token(request)
-    if token: blacklisted_tokens.add(token)
+    if token:
+        blacklisted_tokens.add(token)
     resp = RedirectResponse(url="/login", status_code=303)
     resp.delete_cookie("access_token")
     return resp
@@ -83,11 +95,7 @@ async def party_budget(request: Request):
 
 @app.post("/jewelry-budget")
 async def jewelry_budget(total_budget: float = Form(...), occasion: str = Form(...), image: UploadFile = File(None)):
-        path = f"static/uploads/{image.filename}"
-        with open(path, "wb") as f: shutil.copyfileobj(image.file, f)
-    if image and image.filename:
-        path = f"static/uploads/{image.filename}"
-        with open(path, "wb") as f: shutil.copyfileobj(image.file, f)
+    path = None
     obj = type('obj', (), {'total_budget': total_budget, 'occasion': occasion})()
     return get_jewelry_recommendations(obj, path)
 
@@ -101,6 +109,7 @@ async def startup():
         while True:
             now = datetime.utcnow()
             expired = [u for u,s in active_sessions.items() if (now - s["last_activity"]).total_seconds() > 1800]
-            for u in expired: del active_sessions[u]
+            for u in expired:
+                del active_sessions[u]
             await asyncio.sleep(300)
     asyncio.create_task(cleanup())
