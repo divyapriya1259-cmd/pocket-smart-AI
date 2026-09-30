@@ -1,0 +1,9 @@
+<!DOCTYPE html><html><head><title>Dashboard</title><style>body{font-family:Arial;background:#f1f5f9;margin:0;padding:20px}.card{background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}button{background:#3b82f6;color:white;border:none;padding:10px 15px;border-radius:6px;margin:5px}</style></head>
+<body><h1>PocketSmart AI - Dashboard</h1>
+<div class="card"><h3>Home Budget</h3><input id="homeBudget" placeholder="Budget e.g 50000"><input id="roomType" placeholder="Room Type"><button onclick="getHome()">Get Ideas</button><div id="homeResult"></div></div>
+<div class="card"><h3>Jewelry Budget</h3><form id="jForm" enctype="multipart/form-data"><input name="total_budget" placeholder="Budget"><input name="occasion" placeholder="Occasion"><input type="file" name="image"><button type="submit">Get Jewelry</button></form><div id="jewelResult"></div></div>
+<script>
+async function getHome(){const b=document.getElementById('homeBudget').value;const r=document.getElementById('roomType').value;const res=await fetch('/home-budget',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({budget:b,room_type:r})});const data=await res.json();document.getElementById('homeResult').innerText=JSON.stringify(data).substring(0,1000);}
+document.getElementById('jForm').onsubmit=async(e)=>{e.preventDefault();const fd=new FormData(e.target);const res=await fetch('/jewelry-budget',{method:'POST',body:fd});const data=await res.json();document.getElementById('jewelResult').innerText=JSON.stringify(data).substring(0,1000);}
+</script>
+</body></html>
